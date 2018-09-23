@@ -1,0 +1,4 @@
+"this ZoneID","Index","Y","X","Z","Heading","Target ZoneId","FilterID","VehicleID"
+"int","int","FLOAT","FLOAT","FLOAT","FLOAT","int","int","UINT"
+394,10,-869.000000,3736.000000,-63.000000,505.000000,395,0,0
+394,11,-1043.000000,-2147.000000,36.000000,223.000000,770,0,0
