@@ -39,13 +39,16 @@ plain numbers, boolean show up as true or false literals, and strings show up
 as text surrounded by double quotes (the quotes may not display in excel but they will
 in notepad).
 
-
+"/takedump target" is a special case. If you use this you have to have a target. It
+will dump that targets coordinates until it dies, you zone or you lose the target.
+One row will dump out every time your targets heading changes.
 
 
 REVISION HISTORY
 Date		Author			Description
 -----------------------------------------------------------------------------------------
 20180922	Maudigan		Initial revision
+20180929	Maudigan		Added path recording
 
 
 
@@ -63,6 +66,15 @@ PreSetup("MQ2TakeADump");
 
 //passed to the dump functions to print a comma or new line 
 enum { TAD_NONE, TAD_COMMA, TAD_EOL };
+
+//file for target output
+FILE *fTargetOut = NULL;
+FLOAT LastHeading = 0;
+FLOAT FirstHeading = 0;
+FLOAT FirstX = 0;
+FLOAT FirstY = 0;
+FLOAT FirstZ = 0;
+BOOL MovedFromStart = false;
 
 //creates and opens the dump files
 BOOL fOpenDump(FILE **fOut, PCHAR szType)
@@ -1828,6 +1840,126 @@ VOID dumpZonePoint()
 	}
 }
 
+//finish the dump for target
+VOID dumpTargetEnd()
+{
+	//bail if its not open
+	if (!fTargetOut) return;
+
+	//close it
+	fCloseDump(fTargetOut);
+
+	WriteChatColor("\ao[MQ2TakeADump]\ax Target dump completed.", 10);
+	fTargetOut = NULL;
+	LastHeading = 0;
+	FirstHeading = 0;
+	FirstX = 0;
+	FirstY = 0;
+	FirstZ = 0;
+	MovedFromStart = false;
+}
+
+//dump a target row the the csv
+VOID dumpTargetRow(PCHAR szNote)
+{
+
+	struct tm newtime;
+	__time32_t aclock;
+	CHAR szTime[80] = { 0 };
+
+
+	//if theres no file skip it
+	if (!fTargetOut) return;
+
+	//if theres no target end the file
+	if (!pTarget)
+	{
+		//if there is already a path being taken, close it out
+		dumpTargetEnd();
+		return;
+	}
+
+	//get local time stamp
+	_time32(&aclock);
+	_localtime32_s(&newtime, &aclock);
+	strftime(szTime, sizeof(szTime), "%Y%m%d %H:%M:%S", &newtime);
+
+	//cast the target
+	PSPAWNINFO pDumpTarget = (PSPAWNINFO)pTarget;
+
+	if (strlen(pDumpTarget->AssistName) == 0)
+		fOutDumpCHAR(fTargetOut, szNote); //use the note if no aggro
+	else 
+		fOutDumpCHAR(fTargetOut, "aggro"); //use "aggro" if aggroed
+
+	fOutDumpFLOAT(fTargetOut, pDumpTarget->Y);
+	fOutDumpFLOAT(fTargetOut, pDumpTarget->X);
+	fOutDumpFLOAT(fTargetOut, pDumpTarget->Z);
+	fOutDumpFLOAT(fTargetOut, pDumpTarget->Heading);
+	fOutDumpCHAR(fTargetOut, pDumpTarget->Name);
+	fOutDumpNUM(fTargetOut, pDumpTarget->LastUpdateReceivedTime);
+	fOutDumpCHAR(fTargetOut, szTime, TAD_EOL);
+
+	LastHeading = pDumpTarget->Heading;
+}
+
+//dump all the pathing locations for your target
+VOID dumpTargetBegin()
+{
+	CHAR szName[MAX_STRING] = { 0 };
+
+	if (!pTarget)
+	{
+		WriteChatColor("\ao[MQ2TakeADump]\ax No target to record pathing.", 10);
+		return;
+	}
+
+	//cast the target
+	PSPAWNINFO pDumpTarget = (PSPAWNINFO)pTarget;
+		
+	//if there is already a path being taken, close it out
+	dumpTargetEnd();
+
+	//filename
+	sprintf_s(szName, MAX_STRING, "Path %s", pDumpTarget->Name);
+
+	//open the door dump for output
+	if (fOpenDump(&fTargetOut, szName))
+	{
+		//headers
+		fOutDumpCHAR(fTargetOut, "Note");
+		fOutDumpCHAR(fTargetOut, "Y");
+		fOutDumpCHAR(fTargetOut, "X");
+		fOutDumpCHAR(fTargetOut, "Z");
+		fOutDumpCHAR(fTargetOut, "Heading");
+		fOutDumpCHAR(fTargetOut, "Name");
+		fOutDumpCHAR(fTargetOut, "LastUpdateReceivedTime (miliseconds since server update)");
+		fOutDumpCHAR(fTargetOut, "Time", TAD_EOL); //end of line
+
+		//data types
+		fOutDumpCHAR(fTargetOut, "CHAR");
+		fOutDumpCHAR(fTargetOut, "FLOAT");
+		fOutDumpCHAR(fTargetOut, "FLOAT");
+		fOutDumpCHAR(fTargetOut, "FLOAT");
+		fOutDumpCHAR(fTargetOut, "FLOAT");
+		fOutDumpCHAR(fTargetOut, "CHAR");
+		fOutDumpCHAR(fTargetOut, "UINT");
+		fOutDumpCHAR(fTargetOut, "CHAR", TAD_EOL); //end of line
+
+		//cache the first coord for detecting when they
+		//return to the start
+		PSPAWNINFO pDumpTarget = (PSPAWNINFO)pTarget;
+		FirstY = pDumpTarget->Y;
+		FirstX = pDumpTarget->X;
+		FirstZ = pDumpTarget->Z;
+		FirstHeading = pDumpTarget->Heading;
+
+		//dump the initial row
+		dumpTargetRow("initial");
+	}
+}
+
+
 // the /takeadump command to actuate the dump, by default it dumps every object type
 // or you can specify door, ground, npc, myzone, zonepoint
 VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
@@ -1839,6 +1971,7 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 		dumpNPCType();
 		dumpZone();
 		dumpZonePoint();
+		dumpTargetBegin();
 	}
 	else if (!_strnicmp(szLine, "door", 4))
 	{
@@ -1860,9 +1993,59 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	{
 		dumpZonePoint();
 	}
+	else if (!_strnicmp(szLine, "target", 6))
+	{
+		dumpTargetBegin();
+	}
+	else if (!_strnicmp(szLine, "path", 4)) //alias for "target"
+	{
+		dumpTargetBegin();
+	}
 	else
 	{
-		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|door|npc|myzone|zonepoint]\". No parameter dumps functions as an \"all\".", 10);
+		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|door|npc|myzone|zonepoint|target]\". No parameter dumps functions as an \"all\".", 10);
+	}
+}
+
+//record a path row every pulse, but only if the heading changed
+PLUGIN_API VOID OnPulse(VOID)
+{
+	//if we are recording a target
+	if (fTargetOut)
+	{
+		//end if there is no target
+		if (!pTarget)
+		{
+			dumpTargetEnd();
+		}
+		else
+		{
+			//if there is a target and its heading changed, record it
+			if (LastHeading != ((PSPAWNINFO)pTarget)->Heading)
+			{
+				//uncomment to get spam when a row is recorded... kind of annoying
+				//WriteChatColor("\ao[MQ2TakeADump]\ax Target heading changed, dumping row.", 10);
+				
+				dumpTargetRow("heading change");
+			}
+
+			//detecting when they return to the start
+			PSPAWNINFO pDumpTarget = (PSPAWNINFO)pTarget;
+			if (FirstY == pDumpTarget->Y && FirstX == pDumpTarget->X && FirstZ == pDumpTarget->Z && FirstHeading == pDumpTarget->Heading)
+			{
+				//only let them know they hit the start if they left it in the first place
+				if (MovedFromStart)
+				{
+					WriteChatColor("\ao[MQ2TakeADump]\ax INITIAL COORDINATES REACHED.", 10);
+					dumpTargetRow("looped");
+				}
+			}
+			else
+			{
+				//if we arent at the start coords mark that we moved
+				MovedFromStart = true;
+			}
+		}
 	}
 }
 
