@@ -37,3 +37,7 @@ The second row is a description of the datatype. Numeric and float data shows up
 plain numbers, boolean show up as true or false literals, and strings show up
 as text surrounded by double quotes (the quotes may not display in excel but they will
 in notepad).
+
+"/takedump target" is a special case. If you use this you have to have a target. It
+will dump that targets coordinates until it dies, you zone or you lose the target.
+One row will dump out every time your targets heading changes.
