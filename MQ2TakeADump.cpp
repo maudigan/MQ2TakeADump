@@ -49,10 +49,13 @@ Date		Author			Description
 -----------------------------------------------------------------------------------------
 20180922	Maudigan		Initial revision
 20180929	Maudigan		Added path recording
+20181006    Maudigan        cleaned up output file name
+                            put output files into a "Dumps" folder
+							stoped target output for "/takeadump all"; must request it now
+							added some missing elements namely FindBits and Level to NPC
 
 
-
-Version 1.0.0
+Version 1.0.2
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -83,16 +86,21 @@ BOOL fOpenDump(FILE **fOut, PCHAR szType)
 	__time32_t aclock;
 	CHAR szTime[80] = { 0 };
 	CHAR szFilename[MAX_STRING] = { 0 };
+	CHAR szDir[MAX_STRING] = { 0 };
 	errno_t errNum;
 	PZONEINFO pMyZone = (PZONEINFO)pZoneInfo;
 
 	//get local time stamp
 	_time32(&aclock);
 	_localtime32_s(&newtime, &aclock);
-	strftime(szTime, sizeof(szTime), "%Y%m%d %H-%M-%S", &newtime);
+	strftime(szTime, sizeof(szTime), "%Y-%m-%d-%H-%M-%S", &newtime);
+
+	//create the Dumps directory
+	sprintf_s(szDir, MAX_STRING, "%s\\Dumps", gszINIPath);
+	CreateDirectory(szDir, NULL);
 
 	//open timestamped file for the dump output
-	sprintf_s(szFilename, MAX_STRING, "%s\\%s %s Dump %s.csv", gszINIPath, pMyZone->ShortName, szType, szTime);
+	sprintf_s(szFilename, MAX_STRING, "%s\\%s_%s_%s.csv", szDir, pMyZone->ShortName, szType, szTime);
 	errNum = fopen_s(fOut, szFilename, "at");
 	if (errNum) {
 		WriteChatf("[MQ2TakeADump] Failed to open Dump file for output. Error: %d, File: %s", (int)errNum, szFilename);
@@ -377,7 +385,7 @@ VOID dumpGroundItem()
 	FILE *fOut = NULL;
 
 	//open the grounditem dump for output
-	if (fOpenDump(&fOut, "GroundItem "))
+	if (fOpenDump(&fOut, "GroundItem"))
 	{
 		//headers
 		fOutDumpCHAR(fOut, "ID");
@@ -765,9 +773,21 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "mActorClient.Tattoo");
 		fOutDumpCHAR(fOut, "mActorClient.Details");
 		fOutDumpCHAR(fOut, "GetClass()");
-		fOutDumpCHAR(fOut, "GetId()", TAD_EOL); //end of line
+		fOutDumpCHAR(fOut, "GetId()");
+		fOutDumpCHAR(fOut, "LastCastNum");
+		fOutDumpCHAR(fOut, "RunSpeed");
+		fOutDumpCHAR(fOut, "HPMax");
+		fOutDumpCHAR(fOut, "CharClass");
+		fOutDumpCHAR(fOut, "WarCry");
+		fOutDumpCHAR(fOut, "Deity");
+		fOutDumpCHAR(fOut, "MyWalkSpeed");
+		fOutDumpCHAR(fOut, "GetMeleeRangeVar1");
+		fOutDumpCHAR(fOut, "FindBits");
+		fOutDumpCHAR(fOut, "Title[0x80]");
+		fOutDumpCHAR(fOut, "Level");
+		fOutDumpCHAR(fOut, "Light", TAD_EOL); //end of line
 
-												//data type headers
+		//data type headers
 		fOutDumpCHAR(fOut, "FLOAT");
 		fOutDumpCHAR(fOut, "FLOAT");
 		fOutDumpCHAR(fOut, "FLOAT");
@@ -1086,9 +1106,22 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "int");
-		fOutDumpCHAR(fOut, "int", TAD_EOL); //end of line
+		fOutDumpCHAR(fOut, "int");
+		fOutDumpCHAR(fOut, "int");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "__int64");
+		fOutDumpCHAR(fOut, "BYTE");
+		fOutDumpCHAR(fOut, "int");
+		fOutDumpCHAR(fOut, "int");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "BYTE");
+		fOutDumpCHAR(fOut, "CHAR");
+		fOutDumpCHAR(fOut, "BYTE");
+		fOutDumpCHAR(fOut, "BYTE", TAD_EOL); //end of line
 
-											//loop through the npcs and dump their structure to a CSV
+
+		//loop through the npcs and dump their structure to a CSV
 		PSPAWNINFO pSpawn = (PSPAWNINFO)pSpawnList;
 		while (pSpawn)
 		{
@@ -1410,7 +1443,20 @@ VOID dumpNPCType()
 			fOutDumpNUM(fOut, pSpawn->mActorClient.Tattoo);
 			fOutDumpNUM(fOut, pSpawn->mActorClient.Details);
 			fOutDumpNUM(fOut, pSpawn->GetClass());
-			fOutDumpNUM(fOut, pSpawn->GetId(), TAD_EOL);
+			fOutDumpNUM(fOut, pSpawn->GetId());
+			fOutDumpNUM(fOut, pSpawn->LastCastNum);
+			fOutDumpFLOAT(fOut, pSpawn->RunSpeed);
+			fOutDumpNUM(fOut, (DWORD)pSpawn->HPMax);
+			fOutDumpNUM(fOut, pSpawn->CharClass);
+			fOutDumpNUM(fOut, pSpawn->WarCry);
+			fOutDumpNUM(fOut, pSpawn->Deity);
+			fOutDumpFLOAT(fOut, pSpawn->MyWalkSpeed);
+			fOutDumpFLOAT(fOut, pSpawn->GetMeleeRangeVar1);
+			fOutDumpNUM(fOut, pSpawn->FindBits);
+			fOutDumpCHAR(fOut, pSpawn->Title);
+			fOutDumpNUM(fOut, pSpawn->Level);
+			fOutDumpNUM(fOut, pSpawn->Light, TAD_EOL);
+
 
 			pSpawn = pSpawn->pNext;
 		}
@@ -1921,7 +1967,7 @@ VOID dumpTargetBegin()
 	dumpTargetEnd();
 
 	//filename
-	sprintf_s(szName, MAX_STRING, "Path %s", pDumpTarget->Name);
+	sprintf_s(szName, MAX_STRING, "Path_%s", pDumpTarget->Name);
 
 	//open the door dump for output
 	if (fOpenDump(&fTargetOut, szName))
@@ -1971,7 +2017,7 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 		dumpNPCType();
 		dumpZone();
 		dumpZonePoint();
-		dumpTargetBegin();
+		//dumpTargetBegin(); //target output for "all" is annoying
 	}
 	else if (!_strnicmp(szLine, "door", 4))
 	{
