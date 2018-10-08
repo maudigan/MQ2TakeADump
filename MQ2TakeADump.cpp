@@ -53,9 +53,9 @@ Date		Author			Description
                             put output files into a "Dumps" folder
 							stoped target output for "/takeadump all"; must request it now
 							added some missing elements namely FindBits and Level to NPC
+20181008	Maudigan		Split the groundspawn and objects into seperate commands/files
 
-
-Version 1.0.2
+Version 1.0.3
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -379,7 +379,7 @@ VOID dumpDoor()
 	}
 }
 
-//dumps all the groundspawns and objects to the csv
+//dumps all the groundspawns to the csv
 VOID dumpGroundItem()
 {
 	FILE *fOut = NULL;
@@ -403,7 +403,7 @@ VOID dumpGroundItem()
 		fOutDumpCHAR(fOut, "Z");
 		fOutDumpCHAR(fOut, "Weight//-1 means it can't be picked up", TAD_EOL); //end of line
 
-																			   //data type headers
+		//data type headers
 		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
@@ -419,24 +419,99 @@ VOID dumpGroundItem()
 		fOutDumpCHAR(fOut, "FLOAT");
 		fOutDumpCHAR(fOut, "int", TAD_EOL); //end of line
 
-											//loop through the grounditems and dump their structure to a CSV
+		//loop through the grounditems and dump their structure to a CSV
 		PGROUNDITEM pItem = *(PGROUNDITEM*)pItemList;
 		while (pItem)
 		{
-			fOutDumpNUM(fOut, pItem->ID);
-			fOutDumpNUM(fOut, pItem->DropID);
-			fOutDumpNUM(fOut, pItem->ZoneID);
-			fOutDumpNUM(fOut, pItem->DropSubID);
-			fOutDumpCHAR(fOut, pItem->Name);
-			fOutDumpNUM(fOut, pItem->Expires);
-			fOutDumpFLOAT(fOut, pItem->Heading);
-			fOutDumpFLOAT(fOut, pItem->Pitch);
-			fOutDumpFLOAT(fOut, pItem->Roll);
-			fOutDumpFLOAT(fOut, pItem->Scale);
-			fOutDumpFLOAT(fOut, pItem->Y);
-			fOutDumpFLOAT(fOut, pItem->X);
-			fOutDumpFLOAT(fOut, pItem->Z);
-			fOutDumpNUM(fOut, pItem->Weight, TAD_EOL); //end of line
+			//ground items have a weight
+			if (pItem->Weight != -1)
+			{
+				fOutDumpNUM(fOut, pItem->ID);
+				fOutDumpNUM(fOut, pItem->DropID);
+				fOutDumpNUM(fOut, pItem->ZoneID);
+				fOutDumpNUM(fOut, pItem->DropSubID);
+				fOutDumpCHAR(fOut, pItem->Name);
+				fOutDumpNUM(fOut, pItem->Expires);
+				fOutDumpFLOAT(fOut, pItem->Heading);
+				fOutDumpFLOAT(fOut, pItem->Pitch);
+				fOutDumpFLOAT(fOut, pItem->Roll);
+				fOutDumpFLOAT(fOut, pItem->Scale);
+				fOutDumpFLOAT(fOut, pItem->Y);
+				fOutDumpFLOAT(fOut, pItem->X);
+				fOutDumpFLOAT(fOut, pItem->Z);
+				fOutDumpNUM(fOut, pItem->Weight, TAD_EOL); //end of line
+			}
+
+			pItem = pItem->pNext;
+		}
+
+		//close the file
+		fCloseDump(fOut);
+	}
+}
+
+//dumps all the objects to the csv
+VOID dumpObjects()
+{
+	FILE *fOut = NULL;
+
+	//open the grounditem dump for output
+	if (fOpenDump(&fOut, "Objects"))
+	{
+		//headers
+		fOutDumpCHAR(fOut, "ID");
+		fOutDumpCHAR(fOut, "DropID");
+		fOutDumpCHAR(fOut, "ZoneID");
+		fOutDumpCHAR(fOut, "DropSubID //well zonefile id, but yeah...");
+		fOutDumpCHAR(fOut, "Name");
+		fOutDumpCHAR(fOut, "Expires");
+		fOutDumpCHAR(fOut, "Heading");
+		fOutDumpCHAR(fOut, "Pitch");
+		fOutDumpCHAR(fOut, "Roll");
+		fOutDumpCHAR(fOut, "Scale");
+		fOutDumpCHAR(fOut, "Y");
+		fOutDumpCHAR(fOut, "X");
+		fOutDumpCHAR(fOut, "Z");
+		fOutDumpCHAR(fOut, "Weight//-1 means it can't be picked up", TAD_EOL); //end of line
+
+		//data type headers
+		fOutDumpCHAR(fOut, "int");
+		fOutDumpCHAR(fOut, "DWORD");
+		fOutDumpCHAR(fOut, "DWORD");
+		fOutDumpCHAR(fOut, "DWORD");
+		fOutDumpCHAR(fOut, "CHAR");
+		fOutDumpCHAR(fOut, "long");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "FLOAT");
+		fOutDumpCHAR(fOut, "int", TAD_EOL); //end of line
+
+		//loop through the objects and dump their structure to a CSV
+		PGROUNDITEM pItem = *(PGROUNDITEM*)pItemList;
+		while (pItem)
+		{
+			//objects have a -1 weight
+			if (pItem->Weight == -1)
+			{
+				fOutDumpNUM(fOut, pItem->ID);
+				fOutDumpNUM(fOut, pItem->DropID);
+				fOutDumpNUM(fOut, pItem->ZoneID);
+				fOutDumpNUM(fOut, pItem->DropSubID);
+				fOutDumpCHAR(fOut, pItem->Name);
+				fOutDumpNUM(fOut, pItem->Expires);
+				fOutDumpFLOAT(fOut, pItem->Heading);
+				fOutDumpFLOAT(fOut, pItem->Pitch);
+				fOutDumpFLOAT(fOut, pItem->Roll);
+				fOutDumpFLOAT(fOut, pItem->Scale);
+				fOutDumpFLOAT(fOut, pItem->Y);
+				fOutDumpFLOAT(fOut, pItem->X);
+				fOutDumpFLOAT(fOut, pItem->Z);
+				fOutDumpNUM(fOut, pItem->Weight, TAD_EOL); //end of line
+			}
 
 			pItem = pItem->pNext;
 		}
@@ -2014,6 +2089,7 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	{
 		dumpDoor();
 		dumpGroundItem();
+		dumpObjects();
 		dumpNPCType();
 		dumpZone();
 		dumpZonePoint();
@@ -2026,6 +2102,10 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	else if (!_strnicmp(szLine, "ground", 5))
 	{
 		dumpGroundItem();
+	}
+	else if (!_strnicmp(szLine, "object", 6))
+	{
+		dumpObjects();
 	}
 	else if (!_strnicmp(szLine, "npc", 3))
 	{
@@ -2049,7 +2129,7 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	}
 	else
 	{
-		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|door|npc|myzone|zonepoint|target]\". No parameter dumps functions as an \"all\".", 10);
+		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|object|door|npc|myzone|zonepoint|target]\". No parameter dumps functions as an \"all\".", 10);
 	}
 }
 
