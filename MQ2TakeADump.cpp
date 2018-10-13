@@ -54,8 +54,9 @@ Date		Author			Description
 							stoped target output for "/takeadump all"; must request it now
 							added some missing elements namely FindBits and Level to NPC
 20181008	Maudigan		Split the groundspawn and objects into seperate commands/files
+20181013	Maudigan		Spawn structure updated for patch
 
-Version 1.0.3
+Version 1.0.4
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -597,10 +598,6 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "ParticleCastStartTime");
 		fOutDumpCHAR(fOut, "ParticleCastDuration");
 		fOutDumpCHAR(fOut, "ParticleVisualSpellNum");
-		fOutDumpCHAR(fOut, "Filler0x0f80[0]");
-		fOutDumpCHAR(fOut, "Filler0x0f80[1]");
-		fOutDumpCHAR(fOut, "Filler0x0f80[2]");
-		fOutDumpCHAR(fOut, "Filler0x0f80[3]");
 		fOutDumpCHAR(fOut, "MeleeRadius // used by GetMeleeRange");
 		fOutDumpCHAR(fOut, "CollisionCounter");
 		fOutDumpCHAR(fOut, "CachedFloorLocationY");
@@ -930,10 +927,6 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "UINT");
 		fOutDumpCHAR(fOut, "UINT");
 		fOutDumpCHAR(fOut, "int");
-		fOutDumpCHAR(fOut, "BYTE");
-		fOutDumpCHAR(fOut, "BYTE");
-		fOutDumpCHAR(fOut, "BYTE");
-		fOutDumpCHAR(fOut, "BYTE");
 		fOutDumpCHAR(fOut, "FLOAT");
 		fOutDumpCHAR(fOut, "UINT");
 		fOutDumpCHAR(fOut, "FLOAT");
@@ -1267,10 +1260,6 @@ VOID dumpNPCType()
 			fOutDumpNUM(fOut, pSpawn->ParticleCastStartTime);
 			fOutDumpNUM(fOut, pSpawn->ParticleCastDuration);
 			fOutDumpNUM(fOut, pSpawn->ParticleVisualSpellNum);
-			fOutDumpNUM(fOut, pSpawn->Filler0x0f80[0]);
-			fOutDumpNUM(fOut, pSpawn->Filler0x0f80[1]);
-			fOutDumpNUM(fOut, pSpawn->Filler0x0f80[2]);
-			fOutDumpNUM(fOut, pSpawn->Filler0x0f80[3]);
 			fOutDumpFLOAT(fOut, pSpawn->MeleeRadius);
 			fOutDumpNUM(fOut, pSpawn->CollisionCounter);
 			fOutDumpFLOAT(fOut, pSpawn->CachedFloorLocationY);
