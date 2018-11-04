@@ -55,6 +55,7 @@ Date		Author			Description
 							added some missing elements namely FindBits and Level to NPC
 20181008	Maudigan		Split the groundspawn and objects into seperate commands/files
 20181013	Maudigan		Spawn structure updated for patch
+20181104    Maudigan        Fixed some changed data types for the new client
 
 Version 1.0.4
 ********************************************************************************************/
@@ -389,7 +390,6 @@ VOID dumpGroundItem()
 	if (fOpenDump(&fOut, "GroundItem"))
 	{
 		//headers
-		fOutDumpCHAR(fOut, "ID");
 		fOutDumpCHAR(fOut, "DropID");
 		fOutDumpCHAR(fOut, "ZoneID");
 		fOutDumpCHAR(fOut, "DropSubID //well zonefile id, but yeah...");
@@ -405,7 +405,6 @@ VOID dumpGroundItem()
 		fOutDumpCHAR(fOut, "Weight//-1 means it can't be picked up", TAD_EOL); //end of line
 
 		//data type headers
-		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
@@ -427,7 +426,6 @@ VOID dumpGroundItem()
 			//ground items have a weight
 			if (pItem->Weight != -1)
 			{
-				fOutDumpNUM(fOut, pItem->ID);
 				fOutDumpNUM(fOut, pItem->DropID);
 				fOutDumpNUM(fOut, pItem->ZoneID);
 				fOutDumpNUM(fOut, pItem->DropSubID);
@@ -460,7 +458,6 @@ VOID dumpObjects()
 	if (fOpenDump(&fOut, "Objects"))
 	{
 		//headers
-		fOutDumpCHAR(fOut, "ID");
 		fOutDumpCHAR(fOut, "DropID");
 		fOutDumpCHAR(fOut, "ZoneID");
 		fOutDumpCHAR(fOut, "DropSubID //well zonefile id, but yeah...");
@@ -476,7 +473,6 @@ VOID dumpObjects()
 		fOutDumpCHAR(fOut, "Weight//-1 means it can't be picked up", TAD_EOL); //end of line
 
 		//data type headers
-		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
@@ -498,7 +494,6 @@ VOID dumpObjects()
 			//objects have a -1 weight
 			if (pItem->Weight == -1)
 			{
-				fOutDumpNUM(fOut, pItem->ID);
 				fOutDumpNUM(fOut, pItem->DropID);
 				fOutDumpNUM(fOut, pItem->ZoneID);
 				fOutDumpNUM(fOut, pItem->DropSubID);
@@ -1366,7 +1361,7 @@ VOID dumpNPCType()
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.AccelAngle);
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.SpeedHeading);
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.CameraAngle);
-			fOutDumpFLOAT(fOut, pSpawn->notsure);
+			fOutDumpNUM(fOut, pSpawn->notsure);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version2);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version3);
