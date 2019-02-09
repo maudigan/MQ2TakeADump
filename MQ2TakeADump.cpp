@@ -2079,13 +2079,13 @@ VOID dumpMerchantWin()
 	}
 	CMerchantWnd *pMercWnd = (CMerchantWnd *)pMerchantWnd;
 
-	//get merchant name
+	//get merchant name from the window itself
 	if (CLabel *nameLabel = (CLabel*)pMercWnd->GetChildItem("MW_MerchantName")) {
 		GetCXStr(nameLabel->WindowText, szTemp, MAX_STRING);
 	}
 	sprintf_s(szName, MAX_STRING, "MerchantWnd_%s", szTemp);
 
-	//open the grounditem dump for output
+	//open the dump for output
 	if (fOpenDump(&fOut, szName))
 	{
 		//headers
