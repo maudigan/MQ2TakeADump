@@ -56,8 +56,9 @@ Date		Author			Description
 20181008	Maudigan		Split the groundspawn and objects into seperate commands/files
 20181013	Maudigan		Spawn structure updated for patch
 20181104    Maudigan        Fixed some changed data types for the new client
+20190209    Maudigan        added "/takeadump merchant" to dump the item IDs in MerchantWnd
 
-Version 1.0.4
+Version 1.0.5
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -2064,6 +2065,49 @@ VOID dumpTargetBegin()
 	}
 }
 
+//loops through every faction in the OPEN faction window and dumps them to the CSV
+VOID dumpMerchantWin()
+{
+	CHAR szName[MAX_STRING] = { 0 };
+	CHAR szTemp[MAX_STRING] = { 0 };
+	FILE *fOut = NULL;
+
+	if (!pMerchantWnd)
+	{
+		WriteChatColor("\ao[MQ2TakeADump]\ax No merchant window open.", 10);
+		return;
+	}
+	CMerchantWnd *pMercWnd = (CMerchantWnd *)pMerchantWnd;
+
+	//get merchant name
+	if (CLabel *nameLabel = (CLabel*)pMercWnd->GetChildItem("MW_MerchantName")) {
+		GetCXStr(nameLabel->WindowText, szTemp, MAX_STRING);
+	}
+	sprintf_s(szName, MAX_STRING, "MerchantWnd_%s", szTemp);
+
+	//open the grounditem dump for output
+	if (fOpenDump(&fOut, szName))
+	{
+		//headers
+		fOutDumpCHAR(fOut, "ItemID");
+		fOutDumpCHAR(fOut, "ItemName", TAD_EOL);
+
+		//data type headers
+		fOutDumpCHAR(fOut, "DWORD");
+		fOutDumpCHAR(fOut, "CHAR", TAD_EOL); //end of line
+
+		//loop through the items in the merchant window
+		for (int i = 0; i < pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_length; i++)
+		{
+			fOutDumpNUM(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->ID);
+			fOutDumpCHAR(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->Item2->Name, TAD_EOL);
+		}
+
+		//close the file
+		fCloseDump(fOut);
+	}
+}
+
 
 // the /takeadump command to actuate the dump, by default it dumps every object type
 // or you can specify door, ground, npc, myzone, zonepoint
@@ -2111,9 +2155,13 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	{
 		dumpTargetBegin();
 	}
+	else if (!_strnicmp(szLine, "merch", 5))
+	{
+		dumpMerchantWin();
+	}
 	else
 	{
-		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|object|door|npc|myzone|zonepoint|target]\". No parameter dumps functions as an \"all\".", 10);
+		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|object|door|npc|myzone|zonepoint|target|merchant]\". No parameter dumps functions as an \"all\".", 10);
 	}
 }
 
