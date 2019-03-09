@@ -50,15 +50,21 @@ Date		Author			Description
 20180922	Maudigan		Initial revision
 20180929	Maudigan		Added path recording
 20181006    Maudigan        cleaned up output file name
-                            put output files into a "Dumps" folder
+							put output files into a "Dumps" folder
 							stoped target output for "/takeadump all"; must request it now
 							added some missing elements namely FindBits and Level to NPC
 20181008	Maudigan		Split the groundspawn and objects into seperate commands/files
 20181013	Maudigan		Spawn structure updated for patch
 20181104    Maudigan        Fixed some changed data types for the new client
 20190209    Maudigan        added "/takeadump merchant" to dump the item IDs in MerchantWnd
+20190309	Maudigan		Had a misallignment in the spawninfo struct which caused a 
+							a series of corrupted dumps. Going to do some minor verification
+							by validating an element towards the bottom of each data struct.
+							This assumes if the last element is good, then all of them are
+							good. This may need some tweaks. You should probably still spot 
+							check your dumps for accuracy following a patch.
 
-Version 1.0.5
+Version 1.0.6
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -173,6 +179,7 @@ VOID fOutDumpCHAR(FILE *fOut, PCHAR output, DWORD delimiter = TAD_COMMA)
 VOID dumpDoor()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the door dump for output
 	if (fOpenDump(&fOut, "Door"))
@@ -375,10 +382,29 @@ VOID dumpDoor()
 			fOutDumpBOOL(fOut, pDoor->bHeadingChanged);
 			fOutDumpBOOL(fOut, pDoor->bAllowCorpseDrag);
 			fOutDumpNUM(fOut, pDoor->RealEstateDoorID, TAD_EOL); //end of line
+
+			//Struct Verification
+			// spot check a few data elements to see if we have any alignment issues
+			// most of the end elements in the door struct are bool, that makes it
+			// not very good for detecting alignment issues since it would just
+			// be showing the wrong bool value. So were using an earlier and
+			// more verifiable element.
+			if (pDoor->Heading < -1000 || pDoor->Heading > 2000 || 
+				pDoor->SpellID < -1 || pDoor->SpellID > 70000)
+			{
+				alignmentError = true;
+			}
+
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with PDOOR, please examine your door dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -386,6 +412,7 @@ VOID dumpDoor()
 VOID dumpGroundItem()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the grounditem dump for output
 	if (fOpenDump(&fOut, "GroundItem"))
@@ -442,11 +469,27 @@ VOID dumpGroundItem()
 				fOutDumpNUM(fOut, pItem->Weight, TAD_EOL); //end of line
 			}
 
+			//Struct Verification
+			// spot check a few data elements at the end
+			// of the struct to predict any alignment issues
+			if (pItem->Y > 20000 || pItem->Y < -20000 || 
+				pItem->X > 20000 || pItem->X < -20000 || 
+				pItem->Z > 9999 || pItem->Z < -99999)
+			{
+				alignmentError = true;
+			}
+
 			pItem = pItem->pNext;
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with PGROUNDITEM, please examine your ground item dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -454,6 +497,7 @@ VOID dumpGroundItem()
 VOID dumpObjects()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the grounditem dump for output
 	if (fOpenDump(&fOut, "Objects"))
@@ -510,11 +554,27 @@ VOID dumpObjects()
 				fOutDumpNUM(fOut, pItem->Weight, TAD_EOL); //end of line
 			}
 
+			//Struct Verification
+			// spot check a few data elements at the end
+			// of the struct to predict any alignment issues
+			if (pItem->Y > 20000 || pItem->Y < -20000 || 
+				pItem->X > 20000 || pItem->X < -20000 || 
+				pItem->Z > 9999 || pItem->Z < -99999)
+			{
+				alignmentError = true;
+			}
+
 			pItem = pItem->pNext;
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with PGROUNDITEM, please examine your objects item dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -522,6 +582,7 @@ VOID dumpObjects()
 VOID dumpNPCType()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the grounditem dump for output
 	if (fOpenDump(&fOut, "NPC"))
@@ -1184,7 +1245,6 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "BYTE");
 		fOutDumpCHAR(fOut, "BYTE", TAD_EOL); //end of line
 
-
 		//loop through the npcs and dump their structure to a CSV
 		PSPAWNINFO pSpawn = (PSPAWNINFO)pSpawnList;
 		while (pSpawn)
@@ -1517,12 +1577,27 @@ VOID dumpNPCType()
 			fOutDumpNUM(fOut, pSpawn->Level);
 			fOutDumpNUM(fOut, pSpawn->Light, TAD_EOL);
 
+			//Struct Verification
+			// spot check a few data elements at the end
+			// of the struct to predict any alignment issues
+			if (pSpawn->WalkSpeed < 0 || pSpawn->WalkSpeed > 10 || 
+				pSpawn->Level < 1 || pSpawn->Level > 300 || 
+				pSpawn->mActorClient.Race < 0 || pSpawn->mActorClient.Race > 3000)
+			{
+				alignmentError = true;
+			}
 
 			pSpawn = pSpawn->pNext;
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with PSPAWNINFO, please examine your NPC dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -1530,6 +1605,7 @@ VOID dumpNPCType()
 VOID dumpZone()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the door dump for output
 	if (fOpenDump(&fOut, "Zone"))
@@ -1892,8 +1968,22 @@ VOID dumpZone()
 		fOutDumpNUM(fOut, pZone->PrecipitationType);
 		fOutDumpBOOL(fOut, pZone->bAllowPVP, TAD_EOL); //end of line
 
-													   //close the file
+		//Struct Verification
+		// spot check a few data elements at the end
+		// of the struct to predict any alignment issues
+		if (pZone->FogDensity < 0 || pZone->FogDensity > 1)
+		{
+			alignmentError = true;
+		}
+
+		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with PZONEINFO, please examine your zone dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -1901,6 +1991,7 @@ VOID dumpZone()
 VOID dumpZonePoint()
 {
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
 
 	//open the door dump for output
 	if (fOpenDump(&fOut, "ZonePoint"))
@@ -1916,7 +2007,7 @@ VOID dumpZonePoint()
 		fOutDumpCHAR(fOut, "FilterID");
 		fOutDumpCHAR(fOut, "VehicleID", TAD_EOL); //end of line
 
-												  //data types
+		//data types
 		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "int");
 		fOutDumpCHAR(fOut, "FLOAT");
@@ -1939,10 +2030,24 @@ VOID dumpZonePoint()
 			fOutDumpNUM(fOut, pTeleportTable[i].ZoneId);
 			fOutDumpNUM(fOut, pTeleportTable[i].FilterID);
 			fOutDumpNUM(fOut, pTeleportTable[i].VehicleID, TAD_EOL);
+
+			//Struct Verification
+			// spot check a few data elements at the end
+			// of the struct to predict any alignment issues
+			if (pTeleportTable[i].ZoneId < -1 || pTeleportTable[i].ZoneId > 10000)
+			{
+				alignmentError = true;
+			}
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with Ptp_coords, please examine your zonepoint dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -1995,7 +2100,7 @@ VOID dumpTargetRow(PCHAR szNote)
 
 	if (strlen(pDumpTarget->AssistName) == 0)
 		fOutDumpCHAR(fTargetOut, szNote); //use the note if no aggro
-	else 
+	else
 		fOutDumpCHAR(fTargetOut, "aggro"); //use "aggro" if aggroed
 
 	fOutDumpFLOAT(fTargetOut, pDumpTarget->Y);
@@ -2022,7 +2127,7 @@ VOID dumpTargetBegin()
 
 	//cast the target
 	PSPAWNINFO pDumpTarget = (PSPAWNINFO)pTarget;
-		
+
 	//if there is already a path being taken, close it out
 	dumpTargetEnd();
 
@@ -2065,12 +2170,14 @@ VOID dumpTargetBegin()
 	}
 }
 
-//loops through every faction in the OPEN faction window and dumps them to the CSV
+//loops through every item in the OPEN merchant window and dumps them to the CSV
 VOID dumpMerchantWin()
 {
 	CHAR szName[MAX_STRING] = { 0 };
 	CHAR szTemp[MAX_STRING] = { 0 };
 	FILE *fOut = NULL;
+	BOOL alignmentError = false;
+	UINT curID = 0;
 
 	if (!pMerchantWnd)
 	{
@@ -2099,12 +2206,27 @@ VOID dumpMerchantWin()
 		//loop through the items in the merchant window
 		for (int i = 0; i < pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_length; i++)
 		{
-			fOutDumpNUM(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->ID);
+			curID = pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->ID;
+			fOutDumpNUM(fOut, curID);
 			fOutDumpCHAR(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->Item2->Name, TAD_EOL);
+
+			//Struct Verification
+			// spot check a few data elements at the end
+			// of the struct to predict any alignment issues
+			if (curID < 1001 || curID > 200000)
+			{
+				alignmentError = true;
+			}
 		}
 
 		//close the file
 		fCloseDump(fOut);
+
+		//notify if theres any issues
+		if (alignmentError)
+		{
+			WriteChatf("\ar[MQ2TakeADump] ALIGNMENT ISSUE: There may be an issue with the merchant window, please examine your merchant dumps for accuracy.\ax");
+		}
 	}
 }
 
@@ -2183,7 +2305,7 @@ PLUGIN_API VOID OnPulse(VOID)
 			{
 				//uncomment to get spam when a row is recorded... kind of annoying
 				//WriteChatColor("\ao[MQ2TakeADump]\ax Target heading changed, dumping row.", 10);
-				
+
 				dumpTargetRow("heading change");
 			}
 
