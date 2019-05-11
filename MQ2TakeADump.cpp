@@ -57,14 +57,15 @@ Date		Author			Description
 20181013	Maudigan		Spawn structure updated for patch
 20181104    Maudigan        Fixed some changed data types for the new client
 20190209    Maudigan        added "/takeadump merchant" to dump the item IDs in MerchantWnd
-20190309	Maudigan		Had a misallignment in the spawninfo struct which caused a 
+20190309	Maudigan		Had a misallignment in the spawninfo struct which caused a
 							a series of corrupted dumps. Going to do some minor verification
 							by validating an element towards the bottom of each data struct.
 							This assumes if the last element is good, then all of them are
-							good. This may need some tweaks. You should probably still spot 
+							good. This may need some tweaks. You should probably still spot
 							check your dumps for accuracy following a patch.
+20190511    Maudigan        repairs after patch
 
-Version 1.0.6
+Version 1.0.7
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -389,7 +390,7 @@ VOID dumpDoor()
 			// not very good for detecting alignment issues since it would just
 			// be showing the wrong bool value. So were using an earlier and
 			// more verifiable element.
-			if (pDoor->Heading < -1000 || pDoor->Heading > 2000 || 
+			if (pDoor->Heading < -1000 || pDoor->Heading > 2000 ||
 				pDoor->SpellID < -1 || pDoor->SpellID > 70000)
 			{
 				alignmentError = true;
@@ -472,8 +473,8 @@ VOID dumpGroundItem()
 			//Struct Verification
 			// spot check a few data elements at the end
 			// of the struct to predict any alignment issues
-			if (pItem->Y > 20000 || pItem->Y < -20000 || 
-				pItem->X > 20000 || pItem->X < -20000 || 
+			if (pItem->Y > 20000 || pItem->Y < -20000 ||
+				pItem->X > 20000 || pItem->X < -20000 ||
 				pItem->Z > 9999 || pItem->Z < -99999)
 			{
 				alignmentError = true;
@@ -557,8 +558,8 @@ VOID dumpObjects()
 			//Struct Verification
 			// spot check a few data elements at the end
 			// of the struct to predict any alignment issues
-			if (pItem->Y > 20000 || pItem->Y < -20000 || 
-				pItem->X > 20000 || pItem->X < -20000 || 
+			if (pItem->Y > 20000 || pItem->Y < -20000 ||
+				pItem->X > 20000 || pItem->X < -20000 ||
 				pItem->Z > 9999 || pItem->Z < -99999)
 			{
 				alignmentError = true;
@@ -1580,8 +1581,8 @@ VOID dumpNPCType()
 			//Struct Verification
 			// spot check a few data elements at the end
 			// of the struct to predict any alignment issues
-			if (pSpawn->WalkSpeed < 0 || pSpawn->WalkSpeed > 10 || 
-				pSpawn->Level < 1 || pSpawn->Level > 300 || 
+			if (pSpawn->WalkSpeed < 0 || pSpawn->WalkSpeed > 10 ||
+				pSpawn->Level < 1 || pSpawn->Level > 300 ||
 				pSpawn->mActorClient.Race < 0 || pSpawn->mActorClient.Race > 3000)
 			{
 				alignmentError = true;
@@ -2188,7 +2189,7 @@ VOID dumpMerchantWin()
 
 	//get merchant name from the window itself
 	if (CLabel *nameLabel = (CLabel*)pMercWnd->GetChildItem("MW_MerchantName")) {
-		GetCXStr(nameLabel->WindowText, szTemp, MAX_STRING);
+		GetCXStr(nameLabel->CGetWindowText(), szTemp, MAX_STRING);
 	}
 	sprintf_s(szName, MAX_STRING, "MerchantWnd_%s", szTemp);
 
