@@ -64,8 +64,9 @@ Date		Author			Description
 							good. This may need some tweaks. You should probably still spot
 							check your dumps for accuracy following a patch.
 20190511    Maudigan        repairs after patch
+20199893	Maudigan		updated for 20190731
 
-Version 1.0.7
+Version 1.0.8
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -639,7 +640,7 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "Vehicle /* NULL until you collide with a vehicle (boat,airship etc) */");
 		fOutDumpCHAR(fOut, "Mount /* NULL if no mount present */");
 		fOutDumpCHAR(fOut, "Rider /* _SPAWNINFO of mount's rider */");
-		fOutDumpCHAR(fOut, "Unknown0x015c");
+		fOutDumpCHAR(fOut, "Unknown0x0164");
 		fOutDumpCHAR(fOut, "Targetable /* true if mob is targetable */");
 		fOutDumpCHAR(fOut, "bTargetCyclable");
 		fOutDumpCHAR(fOut, "bClickThrough");
@@ -1300,7 +1301,7 @@ VOID dumpNPCType()
 			fOutDumpNUM(fOut, (DWORD)pSpawn->Vehicle);
 			fOutDumpNUM(fOut, (DWORD)pSpawn->Mount);
 			fOutDumpNUM(fOut, (DWORD)pSpawn->Rider);
-			fOutDumpNUM(fOut, pSpawn->Unknown0x015c);
+			fOutDumpNUM(fOut, pSpawn->Unknown0x0164);
 			fOutDumpBOOL(fOut, pSpawn->Targetable);
 			fOutDumpBOOL(fOut, pSpawn->bTargetCyclable);
 			fOutDumpBOOL(fOut, pSpawn->bClickThrough);
