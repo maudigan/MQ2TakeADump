@@ -64,9 +64,12 @@ Date		Author			Description
 							good. This may need some tweaks. You should probably still spot
 							check your dumps for accuracy following a patch.
 20190511    Maudigan        repairs after patch
-20199893	Maudigan		updated for 20190731
-
-Version 1.0.8
+20190803	Maudigan		updated for 20190731
+20190810	Maudigan		Added a timer to help calculate pause when pathing
+							${TAD.Seconds}, ${TAD.SecondsReset}, ${TAD.Milliseconds}, 
+							${TAD.MillisecondsReset} and
+							/takeadump tstart|tpause|treset|tcontinue
+Version 1.1.0
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -89,6 +92,9 @@ FLOAT FirstX = 0;
 FLOAT FirstY = 0;
 FLOAT FirstZ = 0;
 BOOL MovedFromStart = false;
+long TimerStart = 0;
+long TimerPaused = 0;
+class MQ2TADType *pTADType = 0;
 
 //creates and opens the dump files
 BOOL fOpenDump(FILE **fOut, PCHAR szType)
@@ -176,6 +182,34 @@ VOID fOutDumpCHAR(FILE *fOut, PCHAR output, DWORD delimiter = TAD_COMMA)
 	sprintf_s(szOutput, MAX_STRING, "\"%s\"", output);
 	fOutDump(fOut, szOutput, delimiter);
 }
+
+//return the value of the timer in MS
+int getTimer()
+{
+	//if its paused return the time it was paused at
+	if (TimerPaused)
+	{
+		return TimerPaused;
+	}
+
+	//else if the timer is on return current time
+	else if (TimerStart)
+	{
+		return (long)clock() - TimerStart;
+	}
+
+	//else return 0
+	return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                   //
+//                                         DUMP FUNCTIONS                                            //
+//                                                                                                   //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 //loops through every door in the zone and dumps them to the CSV
 VOID dumpDoor()
@@ -2233,10 +2267,21 @@ VOID dumpMerchantWin()
 }
 
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                   //
+//                                              COMMANDS                                             //
+//                                                                                                   //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 // the /takeadump command to actuate the dump, by default it dumps every object type
 // or you can specify door, ground, npc, myzone, zonepoint
 VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 {
+	CHAR szTemp[MAX_STRING] = { 0 };
+
 	if (strlen(szLine) == 0 || !_strnicmp(szLine, "all", 3))
 	{
 		dumpDoor();
@@ -2283,11 +2328,141 @@ VOID cmdDump(PSPAWNINFO pChar, PCHAR szLine)
 	{
 		dumpMerchantWin();
 	}
+	else if (!_strnicmp(szLine, "ts", 2)) //tstart (start the timer)
+	{
+		TimerPaused = 0;
+		TimerStart = (long)clock();
+		WriteChatColor("\ao[MQ2TakeADump]\ax Starting Timer.", 10);
+		return;
+	}
+	else if (!_strnicmp(szLine, "tp", 2)) //tpause (pause the timer)
+	{
+		if (TimerStart == 0) //cant pause if its not running
+		{
+			WriteChatColor("\ao[MQ2TakeADump]\ax The timer is not running.", 10);
+			return;
+		}
+		TimerPaused = (long)clock() - TimerStart;
+		sprintf_s(szTemp, MAX_STRING, "\ao[MQ2TakeADump]\ax Timer Paused %dms", TimerPaused);
+		WriteChatColor(szTemp, 10);
+		return;
+	}
+	else if (!_strnicmp(szLine, "tr", 2)) //treset (reset timer)
+	{
+		TimerPaused = 0;
+		TimerStart = 0;
+		WriteChatColor("\ao[MQ2TakeADump]\ax Resetting Timer.", 10);
+		return;
+	}
+	else if (!_strnicmp(szLine, "tc", 2)) //tcontinue (unpause the timer)
+	{
+		if (TimerStart == 0)
+		{
+			WriteChatColor("\ao[MQ2TakeADump]\ax The timer is not running.", 10);
+			return;
+		}
+		if (TimerPaused == 0)
+		{
+			WriteChatColor("\ao[MQ2TakeADump]\ax The timer is not paused.", 10);
+			return;
+		}
+		TimerPaused = 0;
+		WriteChatColor("\ao[MQ2TakeADump]\ax The timer is now running.", 10);
+		return;
+	}
 	else
 	{
-		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage is \"/takeadump [all|ground|object|door|npc|myzone|zonepoint|target|merchant]\". No parameter dumps functions as an \"all\".", 10);
+		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage for a dump is \"/takeadump [all|ground|object|door|npc|myzone|zonepoint|target|merchant]\". No parameter dumps functions as an \"all\".", 10);
+		WriteChatColor("\ao[MQ2TakeADump]\ax Proper usage for a timer is \"/takeadump tstart|tpause|treset|tcontinue\".", 10);
 	}
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                   //
+//                                                TLO                                                //
+//                                                                                                   //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+class MQ2TADType : public MQ2Type
+{
+private:
+public:
+	enum TADMembers
+	{
+		Seconds = 1,
+		SecondsReset = 2,
+		Milliseconds = 3,
+		MillisecondsReset = 4
+	};
+	MQ2TADType() :MQ2Type("TAD")
+	{
+		TypeMember(Seconds);
+		TypeMember(SecondsReset);
+		TypeMember(Milliseconds);
+		TypeMember(MillisecondsReset);
+	}
+	bool GetMember(MQ2VARPTR VarPtr, PCHAR Member, PCHAR Index, MQ2TYPEVAR &Dest)
+	{
+		PMQ2TYPEMEMBER pMember = MQ2TADType::FindMember(Member);
+		if (pMember) switch ((TADMembers)pMember->ID)
+		{
+		case Seconds:
+			Dest.Int = getTimer() / 1000;
+			Dest.Type = pIntType;
+			return true;
+		case SecondsReset:
+			Dest.Int = getTimer() / 1000;
+			Dest.Type = pIntType;
+			TimerStart = 0;
+			TimerPaused = 0;
+			return true;
+		case Milliseconds:
+			Dest.Int = getTimer();
+			Dest.Type = pIntType;
+			return true;
+		case MillisecondsReset:
+			Dest.Int = getTimer();
+			Dest.Type = pIntType;
+			TimerStart = 0;
+			TimerPaused = 0;
+			return true;
+		}
+		return FALSE;
+	}
+	bool ToString(MQ2VARPTR VarPtr, PCHAR Destination)
+	{
+		strcpy_s(Destination, MAX_STRING, "TRUE");
+		return true;
+	}
+	bool FromData(MQ2VARPTR &VarPtr, MQ2TYPEVAR &Source)
+	{
+		return false;
+	}
+	bool FromString(MQ2VARPTR &VarPtr, PCHAR Source)
+	{
+		return false;
+	}
+	~MQ2TADType() { }
+};
+
+BOOL dataTAD(PCHAR szName, MQ2TYPEVAR &Dest) {
+	Dest.DWord = 1;
+	Dest.Type = pTADType;
+	return true;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                   //
+//                                              EVENTS                                               //
+//                                                                                                   //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 //record a path row every pulse, but only if the heading changed
 PLUGIN_API VOID OnPulse(VOID)
@@ -2334,10 +2509,20 @@ PLUGIN_API VOID OnPulse(VOID)
 PLUGIN_API VOID InitializePlugin(VOID)
 {
 	//the command to start the dump process
-	AddCommand("/takeadump", cmdDump);
+	AddCommand("/takeadump", cmdDump);	
+	
+	//TLO setup
+	pTADType = new MQ2TADType;
+	AddMQ2Data("TAD", dataTAD);
 }
 
 PLUGIN_API VOID ShutdownPlugin(VOID)
 {
+	//remove the /takeadump command
 	RemoveCommand("/takeadump");
+
+	//remove the TAD TLO
+	delete pTADType;
+	RemoveMQ2Data("TAD");
 }
+
