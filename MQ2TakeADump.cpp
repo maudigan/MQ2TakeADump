@@ -69,7 +69,8 @@ Date		Author			Description
 							${TAD.Seconds}, ${TAD.SecondsReset}, ${TAD.Milliseconds}, 
 							${TAD.MillisecondsReset} and
 							/takeadump tstart|tpause|treset|tcontinue
-Version 1.1.0
+20190824	Maudigan		added markup to merchant window
+Version 1.1.1
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -2221,6 +2222,7 @@ VOID dumpMerchantWin()
 		return;
 	}
 	CMerchantWnd *pMercWnd = (CMerchantWnd *)pMerchantWnd;
+	FLOAT mwMarkup = ((PEQMERCHWINDOW)pMerchantWnd)->Markup;
 
 	//get merchant name from the window itself
 	if (CLabel *nameLabel = (CLabel*)pMercWnd->GetChildItem("MW_MerchantName")) {
@@ -2233,18 +2235,21 @@ VOID dumpMerchantWin()
 	{
 		//headers
 		fOutDumpCHAR(fOut, "ItemID");
-		fOutDumpCHAR(fOut, "ItemName", TAD_EOL);
+		fOutDumpCHAR(fOut, "ItemName");
+		fOutDumpCHAR(fOut, "Markup", TAD_EOL);
 
 		//data type headers
 		fOutDumpCHAR(fOut, "DWORD");
-		fOutDumpCHAR(fOut, "CHAR", TAD_EOL); //end of line
+		fOutDumpCHAR(fOut, "CHAR");
+		fOutDumpCHAR(fOut, "FLOAT", TAD_EOL); //end of line
 
 		//loop through the items in the merchant window
 		for (int i = 0; i < pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_length; i++)
 		{
 			curID = pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->ID;
 			fOutDumpNUM(fOut, curID);
-			fOutDumpCHAR(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->Item2->Name, TAD_EOL);
+			fOutDumpCHAR(fOut, pMercWnd->PageHandlers.Begin->pObject->ItemContainer.m_array[i].pCont->Item2->Name);
+			fOutDumpFLOAT(fOut, mwMarkup, TAD_EOL);
 
 			//Struct Verification
 			// spot check a few data elements at the end
