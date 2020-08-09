@@ -66,11 +66,12 @@ Date		Author			Description
 20190511    Maudigan        repairs after patch
 20190803	Maudigan		updated for 20190731
 20190810	Maudigan		Added a timer to help calculate pause when pathing
-							${TAD.Seconds}, ${TAD.SecondsReset}, ${TAD.Milliseconds}, 
+							${TAD.Seconds}, ${TAD.SecondsReset}, ${TAD.Milliseconds},
 							${TAD.MillisecondsReset} and
 							/takeadump tstart|tpause|treset|tcontinue
 20190824	Maudigan		added markup to merchant window
-Version 1.1.1
+20200809    Maudigan        update for 20200722
+Version 1.1.2
 ********************************************************************************************/
 
 #include "../MQ2Plugin.h"
@@ -798,25 +799,28 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "PhysicsBeforeLastPort.AccelAngle");
 		fOutDumpCHAR(fOut, "PhysicsBeforeLastPort.SpeedHeading");
 		fOutDumpCHAR(fOut, "PhysicsBeforeLastPort.CameraAngle");
-		fOutDumpCHAR(fOut, "notsure");
+		fOutDumpCHAR(fOut, "Filler0x1494");
 		fOutDumpCHAR(fOut, "Fellowship.Version");
 		fOutDumpCHAR(fOut, "Fellowship.Version2//just place holders for now, ill fix these later");
 		fOutDumpCHAR(fOut, "Fellowship.Version3");
 		fOutDumpCHAR(fOut, "Fellowship.Version4");
 		fOutDumpCHAR(fOut, "Fellowship.FellowshipID");
-		fOutDumpCHAR(fOut, "Fellowship.FellowshipID2//guild does this to, need to figure out why");
+		fOutDumpCHAR(fOut, "Fellowship.FellowshipGUID.UniqueEntityID");
+		fOutDumpCHAR(fOut, "Fellowship.FellowshipGUID.WorldUniqueID");
+		fOutDumpCHAR(fOut, "Fellowship.FellowshipGUID.Reserved");
 		fOutDumpCHAR(fOut, "Fellowship.Leader[0x40]");
 		fOutDumpCHAR(fOut, "Fellowship.MotD[0x400]");
 		fOutDumpCHAR(fOut, "Fellowship.Members");
 		for (int i = 0; i <= 11; i++)
 		{
-			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].WorldID");
+			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].UniqueEntityID.UniqueEntityID");
+			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].UniqueEntityID.WorldUniqueID");
+			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].UniqueEntityID.Reserved");
 			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].Name[0x40]");
 			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].ZoneID");
 			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].Level");
 			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].Class");
 			fOutDumpCHAR(fOut, "Fellowship.FellowshipMember[i].LastOn// FastTime() timestamp");
-			fOutDumpCHAR(fOut, "Fellowship.Somedata[i].Strings[0x20]");
 			fOutDumpCHAR(fOut, "Fellowship.bExpSharingEnabled[0xc]");
 			fOutDumpCHAR(fOut, "Fellowship.bSharedExpCapped[0xc]");
 		}
@@ -1133,19 +1137,22 @@ VOID dumpNPCType()
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
 		fOutDumpCHAR(fOut, "DWORD");
-		fOutDumpCHAR(fOut, "DWORD");
+		fOutDumpCHAR(fOut, "UINT");
+		fOutDumpCHAR(fOut, "WORD");
+		fOutDumpCHAR(fOut, "WORD");
 		fOutDumpCHAR(fOut, "CHAR");
 		fOutDumpCHAR(fOut, "CHAR");
 		fOutDumpCHAR(fOut, "DWORD");
 		for (int i = 0; i <= 11; i++)
 		{
-			fOutDumpCHAR(fOut, "DWORD");
+			fOutDumpCHAR(fOut, "UINT");
+			fOutDumpCHAR(fOut, "WORD");
+			fOutDumpCHAR(fOut, "WORD");
 			fOutDumpCHAR(fOut, "CHAR");
 			fOutDumpCHAR(fOut, "DWORD");
 			fOutDumpCHAR(fOut, "DWORD");
 			fOutDumpCHAR(fOut, "DWORD");
 			fOutDumpCHAR(fOut, "DWORD");
-			fOutDumpCHAR(fOut, "CHAR");
 			fOutDumpCHAR(fOut, "bool");
 			fOutDumpCHAR(fOut, "bool");
 		}
@@ -1459,25 +1466,28 @@ VOID dumpNPCType()
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.AccelAngle);
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.SpeedHeading);
 			fOutDumpFLOAT(fOut, pSpawn->PhysicsBeforeLastPort.CameraAngle);
-			fOutDumpNUM(fOut, pSpawn->notsure);
+			fOutDumpNUM(fOut, pSpawn->Filler0x1494);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version2);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version3);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Version4);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipID);
-			fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipID2);
-			fOutDumpCHAR(fOut, pSpawn->Fellowship.Leader);
+			fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipGUID.UniqueEntityID);
+			fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipGUID.WorldUniqueID);
+			fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipGUID.Reserved);
+			fOutDumpCHAR(fOut, (PCHAR)(pSpawn->Fellowship.Leader));
 			fOutDumpCHAR(fOut, pSpawn->Fellowship.MotD);
 			fOutDumpNUM(fOut, pSpawn->Fellowship.Members);
 			for (int i = 0; i <= 11; i++)
 			{
-				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].WorldID);
+				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].UniqueEntityID.UniqueEntityID);
+				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].UniqueEntityID.WorldUniqueID);
+				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].UniqueEntityID.Reserved);
 				fOutDumpCHAR(fOut, pSpawn->Fellowship.FellowshipMember[i].Name);
 				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].ZoneID);
 				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].Level);
 				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].Class);
 				fOutDumpNUM(fOut, pSpawn->Fellowship.FellowshipMember[i].LastOn);
-				fOutDumpCHAR(fOut, pSpawn->Fellowship.Somedata[i].Strings);
 				fOutDumpBOOL(fOut, pSpawn->Fellowship.bExpSharingEnabled[i]);
 				fOutDumpBOOL(fOut, pSpawn->Fellowship.bSharedExpCapped[i]);
 			}
@@ -2514,8 +2524,8 @@ PLUGIN_API VOID OnPulse(VOID)
 PLUGIN_API VOID InitializePlugin(VOID)
 {
 	//the command to start the dump process
-	AddCommand("/takeadump", cmdDump);	
-	
+	AddCommand("/takeadump", cmdDump);
+
 	//TLO setup
 	pTADType = new MQ2TADType;
 	AddMQ2Data("TAD", dataTAD);
